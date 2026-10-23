@@ -214,6 +214,19 @@
 @keyframes bar-in { from { transform: scaleX(0); } }
 @keyframes drift { to { transform: translateX(-50%); } }
 
+/* Hero mark floats like something resting on water: a slow bob, and a
+   slight tilt on a different period so the motion never repeats exactly. */
+@keyframes float-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+@keyframes float-tilt {
+  0%, 100% { transform: rotate(-1deg); }
+  50% { transform: rotate(1deg); }
+}
+.float-bob { animation: float-bob 4.8s ease-in-out 1.2s infinite both; }
+.float-tilt { animation: float-tilt 6.4s ease-in-out 1.2s infinite both; transform-origin: 50% 60%; }
+
 .hero-in {
   animation: hero-in var(--dur-hero) var(--ease-out) both;
   animation-delay: var(--d, 0ms);

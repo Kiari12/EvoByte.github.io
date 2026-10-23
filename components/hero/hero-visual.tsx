@@ -33,8 +33,12 @@ export function HeroVisual() {
   return (
     <m.div ref={ref} style={reduce ? undefined : { scale, opacity, y }} className="pointer-events-none relative">
       <m.div style={reduce ? undefined : { x: sx, y: sy }}>
-        {/* Large, right-aligned to the container edge */}
-        <EvoMark animate className="ml-auto block w-full max-w-[520px] text-white" />
+        {/* Large, right-aligned to the container edge; floats once it has built in */}
+        <div className="float-bob">
+          <div className="float-tilt">
+            <EvoMark animate className="ml-auto block w-full max-w-[520px] text-white" />
+          </div>
+        </div>
       </m.div>
     </m.div>
   );
