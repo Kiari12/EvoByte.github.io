@@ -1,0 +1,286 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  /* Brand */
+  --brand-navy: #0e3051;
+  --brand-honey: #e3bd5c;
+
+  /* shadcn semantic tokens */
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2 0.03 254);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.03 254);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.03 254);
+  --primary: #0e3051;
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.975 0.008 254);
+  --secondary-foreground: #0e3051;
+  --muted: oklch(0.975 0.008 254);
+  --muted-foreground: oklch(0.45 0.03 254);
+  /* shadcn uses --accent for HOVER states. Keep it a quiet navy tint;
+     the real accent is --brand-honey. */
+  --accent: oklch(0.94 0.02 254);
+  --accent-foreground: #0e3051;
+  --destructive: oklch(0.58 0.18 28);
+  --danger: var(--destructive);
+  --border: oklch(0.9 0.01 254);
+  --input: oklch(0.9 0.01 254);
+  --ring: #e3bd5c;
+  --radius: 0.5rem;
+
+  /* Slant: measured from the E bars of the vector master (70 over 102 units) */
+  --slant: 34deg;
+  --slant-tan: 0.675;
+
+  /* Motion (CSS mirror of lib/motion.ts) */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-instant: 100ms;
+  --dur-fast: 160ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --dur-hero: 500ms;
+
+  /* Layout */
+  --container: 1200px;
+  --gutter: clamp(16px, 4vw, 32px);
+  --section-y: clamp(64px, 8vw, 128px);
+  --shadow-popover: 0 1px 2px oklch(0.2 0.03 254 / 0.06), 0 8px 24px oklch(0.2 0.03 254 / 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-danger: var(--danger);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-navy-950: oklch(0.21 0.05 254);
+  --color-navy-900: #0e3051;
+  --color-navy-700: oklch(0.4 0.08 254);
+  --color-navy-100: oklch(0.94 0.02 254);
+  --color-navy-50: oklch(0.975 0.008 254);
+  --color-honey-500: oklch(0.74 0.13 82);
+  --color-honey-400: #e3bd5c;
+  --color-honey-100: oklch(0.95 0.04 88);
+  --color-ink: oklch(0.2 0.03 254);
+  --color-ink-muted: oklch(0.45 0.03 254);
+  --color-ink-subtle: oklch(0.62 0.02 254);
+  --color-line: oklch(0.9 0.01 254);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 8px;
+
+  --shadow-popover: var(--shadow-popover);
+
+  /* Every transition-* utility defaults to the brand timing */
+  --default-transition-duration: 160ms;
+  --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@layer base {
+  html {
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scroll-padding-top: 88px;
+  }
+  body {
+    @apply bg-background text-foreground;
+    overflow-x: clip;
+  }
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p, li, dd { text-wrap: pretty; }
+  /* Double ring: navy next to the element for contrast on white (≥3:1),
+     honey outside it for the brand. Both read on navy surfaces. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--brand-navy);
+    transition-duration: 0ms !important; /* keyboard-triggered: instant (§9.1) */
+  }
+  ::selection { background: var(--color-honey-100); color: var(--brand-navy); }
+}
+
+/* ---------- Layout ---------- */
+@utility container-site {
+  margin-inline: auto;
+  width: 100%;
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  padding-inline: var(--gutter);
+}
+@utility section-y {
+  padding-block: var(--section-y);
+}
+
+/* ---------- Type scale (§5) ---------- */
+@utility text-hero {
+  font-size: clamp(2.75rem, 1.6rem + 5vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.95;
+}
+@utility text-h1 {
+  font-size: clamp(2rem, 1.5rem + 2vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+}
+@utility text-h2 {
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+@utility text-h3 {
+  font-size: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+@utility text-lead {
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+/* Inner-page title: between H1 and Hero */
+@utility text-display {
+  font-size: clamp(2.5rem, 1.6rem + 3.6vw, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.98;
+}
+@utility text-stat {
+  font-size: clamp(3.5rem, 2.5rem + 4vw, 6rem);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+@utility text-ui {
+  font-size: 0.9375rem;
+}
+@utility text-code {
+  font-size: 0.8125rem;
+}
+@utility text-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+/* ---------- Slant utilities (§3) ---------- */
+@utility slant-box {
+  --h: 1em;
+  clip-path: polygon(
+    calc(var(--h) * var(--slant-tan)) 0, 100% 0,
+    calc(100% - var(--h) * var(--slant-tan)) 100%, 0 100%
+  );
+}
+
+/* ---------- Hero entrance: plays from server HTML, no JS needed ---------- */
+@keyframes hero-in {
+  from {
+    opacity: var(--o, 0);
+    transform: translateY(var(--y, 12px)) scale(var(--s, 1));
+    filter: blur(var(--b, 0px));
+  }
+}
+@keyframes bar-in { from { transform: scaleX(0); } }
+@keyframes drift { to { transform: translateX(-50%); } }
+
+.hero-in {
+  animation: hero-in var(--dur-hero) var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+.hero-eyebrow { --y: 8px; animation-duration: 300ms; }
+/* 0.01 is invisible, but lets the headline register as the LCP element */
+.hero-line { display: block; --y: 20px; --b: 6px; --o: 0.01; }
+.hero-sub { --y: 8px; animation-duration: 400ms; }
+.hero-cta { --y: 0px; --s: 0.95; animation-duration: 300ms; }
+.hero-band { --y: 24px; animation-duration: 500ms; }
+
+.slant-underline { position: relative; white-space: nowrap; }
+.slant-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0.08em;
+  bottom: 0.04em;
+  height: 0.12em;
+  background: var(--brand-honey);
+  clip-path: polygon(
+    calc(0.12em * var(--slant-tan)) 0, 100% 0,
+    calc(100% - 0.12em * var(--slant-tan)) 100%, 0 100%
+  );
+  transform-origin: left;
+  animation: bar-in 450ms var(--ease-in-out) 650ms both;
+  z-index: -1;
+}
+
+.pattern-drift { animation: drift 80s linear 1.2s infinite; }
+.pattern-drift[data-paused="true"] { animation-play-state: paused; }
+
+/* The EB frieze is a mask, so it takes the colour of `currentColor`. */
+.pattern-tile {
+  display: block;
+  flex: none;
+  width: 2304px;
+  height: 100%;
+  background: currentColor;
+  -webkit-mask: url("/brand/evobyte-pattern-tile.svg") 0 50% / 2304px auto no-repeat;
+  mask: url("/brand/evobyte-pattern-tile.svg") 0 50% / 2304px auto no-repeat;
+}
+
+/* ---------- Button hover sheen (fine pointers only) ---------- */
+@media (hover: hover) and (pointer: fine) {
+  .sheen::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 40%;
+    background: oklch(1 0 0 / 0.2);
+    transform: translateX(-150%) skewX(calc(var(--slant) * -1));
+    pointer-events: none;
+  }
+  /* Sweep forward on hover; reset instantly so it never travels backward. */
+  .sheen:hover::before {
+    transform: translateX(350%) skewX(calc(var(--slant) * -1));
+    transition: transform 450ms var(--ease-in-out);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
