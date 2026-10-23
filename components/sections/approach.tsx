@@ -1,7 +1,4 @@
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SectionHead } from "./section-head";
 
 export const HABITS = [
   {
@@ -43,31 +40,5 @@ export function Habits({ compact = false }: { compact?: boolean }) {
         </li>
       ))}
     </ol>
-  );
-}
-
-export function Approach() {
-  return (
-    <section aria-labelledby="approach-title" className="section-y bg-navy-50">
-      <div className="container-site grid gap-12 md:grid-cols-12">
-        <div className="md:col-span-4">
-          <SectionHead
-            id="approach-title"
-            title="Structure first. Decoration never."
-            lead="We're a small team, so we keep the process small too. Four habits cover most of it."
-          />
-          <Link
-            href="/studio"
-            className="group mt-6 inline-flex min-h-11 items-center gap-1.5 rounded-sm text-sm font-semibold text-navy-900"
-          >
-            How a project runs
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" strokeWidth={1.5} aria-hidden />
-          </Link>
-        </div>
-        <div className="md:col-span-8 md:pt-2">
-          <Habits compact />
-        </div>
-      </div>
-    </section>
   );
 }

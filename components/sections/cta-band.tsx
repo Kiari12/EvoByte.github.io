@@ -14,7 +14,7 @@ export function CtaBand({
   surface?: "tint" | "white";
 }) {
   return (
-    <section aria-labelledby="cta-title" className={cn("section-y", surface === "white" ? "bg-white" : "bg-navy-50")}>
+    <section aria-labelledby="cta-title" className={cn("section-y", surface === "white" ? "bg-white" : "bg-cream")}>
       <div className="container-site grid items-end gap-8 md:grid-cols-12">
         <div className="md:col-span-8">
           <h2 id="cta-title" className="text-h1 text-navy-900">{title}</h2>

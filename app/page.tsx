@@ -1,19 +1,15 @@
 import { Hero } from "@/components/hero/hero";
+import { Services } from "@/components/sections/services";
 import { WorkPreview } from "@/components/sections/work-preview";
-import { Approach } from "@/components/sections/approach";
-import { StatsBand } from "@/components/sections/stats-band";
-import { CodeMoment } from "@/components/sections/code-moment";
-import { CtaBand } from "@/components/sections/cta-band";
+import { About } from "@/components/sections/about";
 
 export default function Home() {
   return (
     <>
       <Hero />
+      <Services />
       <WorkPreview />
-      <Approach />
-      <StatsBand />
-      <CodeMoment />
-      <CtaBand />
+      <About />
     </>
   );
 }

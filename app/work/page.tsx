@@ -25,7 +25,7 @@ function Screen({ p, feature, wide, panel }: { p: Product; feature?: boolean; wi
     <div
       className={cn(
         "flex items-center justify-center rounded-md",
-        panel === "tint" ? "bg-navy-50" : "bg-white",
+        panel === "tint" ? "bg-cream" : "bg-white",
         wide ? "p-4 sm:p-8 md:p-14" : feature ? "min-h-[300px] p-6 sm:p-10 md:min-h-[420px] md:p-16" : "p-6 sm:p-10",
       )}
     >
@@ -96,7 +96,7 @@ export default function WorkPage() {
 
       {PRODUCTS.map((p, i) => {
         const flip = i % 2 === 1;
-        const surface = flip ? "bg-navy-50" : "bg-white";
+        const surface = flip ? "bg-cream" : "bg-white";
         const panel = flip ? "white" : "tint";
         const title = <h2 id={`${p.slug}-title`} className="text-h1 text-navy-900">{p.name}</h2>;
 

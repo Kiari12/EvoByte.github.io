@@ -46,7 +46,8 @@ export function EvoMark({ animate = false, className }: { animate?: boolean; cla
       role="img"
       aria-label="EvoByte"
       initial={animate ? "hidden" : false}
-      animate="show"
+      // Builds in once, when most of it has scrolled into view
+      {...(animate ? { whileInView: "show", viewport: { once: true, amount: 0.6 } } : { animate: "show" })}
     >
       {[MARK.e1, MARK.e2, MARK.e3].map((d, i) => (
         <m.path key={i} id={`e-bar-${i + 1}`} d={d} fill="currentColor" custom={{ i, reduce }} variants={eBar} />

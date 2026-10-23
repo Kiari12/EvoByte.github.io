@@ -33,17 +33,17 @@ export function SiteHeader() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 border-b bg-white transition-[border-color]",
-        scrolled ? "border-line" : "border-transparent",
+        "sticky top-0 z-40 border-b border-line bg-white transition-shadow",
+        scrolled && "shadow-[0_1px_12px_rgb(14_48_81/0.06)]",
       )}
     >
       <div className="container-site flex h-[72px] items-center gap-8">
         <Link href="/" aria-label="EvoByte home" className="-m-2 rounded-sm p-2">
-          <EvoLogo className="w-[132px]" />
+          <EvoLogo className="w-[172px]" />
         </Link>
 
         <nav aria-label="Primary" className="ml-auto hidden md:block">
-          <ul className="flex items-center gap-1">
+          <ul className="flex items-center gap-3">
             {NAV.map((item) => {
               const active = isActive(item.href);
               return (
@@ -52,15 +52,15 @@ export function SiteHeader() {
                     href={item.href}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "relative block rounded-sm px-3 py-2 text-ui font-semibold transition-colors",
-                      active ? "text-navy-900" : "text-ink-muted hover:text-navy-900",
+                      "relative block rounded-sm px-2 py-2 text-ui font-medium text-navy-900 transition-colors hover:text-navy-700",
+                      active && "font-semibold",
                     )}
                   >
                     {item.label}
                     {active && (
                       <m.span
                         layoutId="nav-bar"
-                        className="absolute inset-x-3 bottom-0 h-[3px] bg-honey-400 slant-box"
+                        className="absolute inset-x-2 bottom-0 h-[3px] bg-honey-400 slant-box"
                         style={{ ["--h" as string]: "3px" }}
                         transition={{ duration: modality === "keyboard" ? 0 : 0.22, ease: EASE_OUT }}
                       />
@@ -72,7 +72,7 @@ export function SiteHeader() {
           </ul>
         </nav>
 
-        <Button asChild size="sm" className="hidden md:inline-flex">
+        <Button asChild className="hidden md:inline-flex">
           <Link href="/contact">Start a project</Link>
         </Button>
 

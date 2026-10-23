@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 40 835 460" role="img" aria-label="EvoByte">
-  <path id="e-bar-1" fill="currentColor" d="M40 150H268L340 48H110z"/>
-  <path id="e-bar-2" fill="currentColor" d="M40 322H268L340 220H110z"/>
-  <path id="e-bar-3" fill="currentColor" d="M40 478H268L340 378H110z"/>
-  <path id="b-stem" fill="var(--brand-honey, #e3bd5c)" d="M345 172H445L645 490H545z"/>
-  <path id="b-bowl" fill="var(--brand-honey, #e3bd5c)" d="M545 48H795L850 155L800 262L855 360L795 475H678L615 375H745L685 265L735 158H500z"/>
-</svg>

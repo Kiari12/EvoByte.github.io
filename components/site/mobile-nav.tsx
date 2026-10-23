@@ -59,7 +59,7 @@ export function MobileNav({
             >
               <m.div
                 id="mobile-nav"
-                className="fixed inset-0 z-50 flex flex-col bg-navy-950 text-white md:hidden"
+                className="fixed inset-0 z-50 flex flex-col bg-navy-900 text-white md:hidden"
                 custom={instant}
                 variants={sheet}
                 initial="hidden"

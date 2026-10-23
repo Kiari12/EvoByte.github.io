@@ -71,7 +71,7 @@ export default function StudioPage() {
         </section>
       )}
 
-      <section aria-labelledby="habits-title" className="section-y bg-navy-50">
+      <section aria-labelledby="habits-title" className="section-y bg-cream">
         <div className="container-site">
           <SectionHead
             className="mb-12"
