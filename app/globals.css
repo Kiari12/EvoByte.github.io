@@ -230,6 +230,22 @@
 .hero-cta { --y: 0px; --s: 0.95; animation-duration: 300ms; }
 .hero-field { --y: 0px; animation-duration: 700ms; }
 
+/* Hero pattern flows right like water. The layer starts one tile (520px) to
+   the left and slides one tile right, so the loop is seamless; the swell is a
+   slow rise and fall on its own period. Transforms only. */
+@keyframes pattern-flow { to { transform: translateX(520px); } }
+@keyframes pattern-swell {
+  0%, 100% { transform: translateY(-6px); }
+  50% { transform: translateY(6px); }
+}
+.pattern-flow {
+  position: absolute;
+  inset: -12px 0 -12px -520px;
+  animation: pattern-flow 28s linear infinite;
+  will-change: transform;
+}
+.pattern-swell { animation: pattern-swell 7s ease-in-out infinite; }
+
 /* ---------- EB pattern ----------
    Seamless tile from the EvoLogo masters. Texture, not wallpaper: a hero
    crop or one panel, never behind running text. The on-navy tile carries

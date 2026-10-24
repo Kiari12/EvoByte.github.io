@@ -10,8 +10,11 @@ export function Hero() {
   return (
     <section aria-labelledby="hero-title" className="relative isolate overflow-hidden bg-navy-900 text-white">
       {/* EB pattern crop on the right half, faded into the navy. No text sits on it. */}
-      <div aria-hidden className="hero-in hero-field absolute inset-y-0 right-0 left-[52%] -z-10 hidden sm:block" style={d(500)}>
-        <div className="bg-pattern absolute inset-0" />
+      <div aria-hidden className="hero-in hero-field absolute inset-y-0 right-0 left-[52%] -z-10 hidden overflow-hidden sm:block" style={d(500)}>
+        {/* Flows right like water: a seamless one-tile slide, with a slow swell inside it */}
+        <div className="pattern-flow">
+          <div className="bg-pattern pattern-swell absolute inset-0" />
+        </div>
         <div className="bg-pattern-fade absolute inset-0" />
       </div>
 
