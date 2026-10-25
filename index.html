@@ -233,6 +233,21 @@ body.menu-open .menu-btn span:nth-child(3){transform:translateY(-7px) rotate(-45
   }
 }
 
+/* phones: the EB builds on load, then scrolling shrinks it into the EB pattern, which fades downward.
+   The script adds .m-anim only when motion is allowed; without it the still hero above stays. */
+.m-art,.m-patwrap{display:none}
+.hero.m-scroll{height:175vh;height:175svh}
+.stage.m-anim{position:sticky;top:0;height:100vh;height:100svh;min-height:0;overflow:hidden;--artw:min(100vw,560px);--ecy:calc(60px + var(--artw) * .3974)}
+.stage.m-anim .static-art{display:none}
+.stage.m-anim .static{position:absolute;left:0;right:0;bottom:0;padding:0 var(--gx) calc(var(--cut) + 36px)}
+.stage.m-anim .m-art{display:block;position:absolute;top:60px;left:50%;width:var(--artw);aspect-ratio:960/780;transform:translateX(-50%);opacity:calc(1 - var(--mf,0));
+  -webkit-mask-image:radial-gradient(ellipse 58% 56% at 50% 49%,#000 62%,transparent 100%);mask-image:radial-gradient(ellipse 58% 56% at 50% 49%,#000 62%,transparent 100%)}
+.m-art video{display:block;width:100%;height:100%;object-fit:cover}
+.stage.m-anim .m-patwrap{display:block;position:absolute;inset:0;pointer-events:none;opacity:var(--po,0);
+  -webkit-mask-image:linear-gradient(180deg,#000 0%,#000 20%,transparent 50%);mask-image:linear-gradient(180deg,#000 0%,#000 20%,transparent 50%)}
+.m-pat{position:absolute;left:calc(50% - 60vw + var(--artw) * .016);width:120vw;top:calc(var(--ecy) - 75vh);height:150vh;
+  background-repeat:repeat;background-position:center;background-size:108px 128px;transform:scale(var(--ps,3));transform-origin:50% 50%}
+
 /* ---------- sections ---------- */
 section{position:relative}
 .sec{padding:clamp(88px,11vw,152px) 0}
@@ -506,6 +521,8 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
       <span>Scroll to build</span>
     </div>
 
+    <div class="m-patwrap" aria-hidden="true"><div class="m-pat"></div></div>
+    <div class="m-art" aria-hidden="true"><video id="mvid" muted playsinline preload="none" tabindex="-1"></video></div>
     <div class="static">
       <div class="static-art" aria-hidden="true"></div>
       <div class="static-copy">
@@ -1063,8 +1080,65 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
   }
   function applyHeroMode() {
-    if (GATES.some(q => matchMedia(q).matches)) disableScrub();
+    const gated = GATES.some(q => matchMedia(q).matches);
+    if (gated) disableScrub();
     else enableScrub();
+    if (gated && mobileAnimOK()) enableMobile();
+    else disableMobile();
+  }
+
+  /* ---------- phones: the EB builds, then scroll turns it into the EB pattern ---------- */
+  // Phones and portrait tablets get this when motion is allowed; landscape phones and reduced motion keep the still hero.
+  const mobileAnimOK = () => GATES.slice(0, 3).some(q => matchMedia(q).matches) && !matchMedia(GATES[3]).matches && !reduceMQ.matches;
+  const mv = $('#mvid'), mArt = $('.m-art'), mPat = $('.m-pat');
+  let mOn = false, mInit = false, mRaf = null, mLast = { ps: -1, mf: -1, po: -1 }, artW = 0;
+  function patternTile() {
+    // one EB centred in a 108x128 tile, plus quarter marks in the corners, so rows interlock like the brand pattern
+    const E = ['M100 58H298L235 142H38Z', 'M100 205H298L235 290H38Z', 'M100 340H298L235 425H38Z'];
+    const B = ['M305 160H395L560 438H465Z', 'M440 148L490 58H690L738 150L688 240L738 330L690 425H580L545 330H640L598 240L632 150Z'];
+    const mark = E.map(d => `<path fill='#eaf0f8' d='${d}'/>`).join('') + B.map(d => `<path fill='#e3bd5c' d='${d}'/>`).join('');
+    const uses = [[54, 64], [0, 0], [108, 0], [0, 128], [108, 128]].map(([x, y]) => `<use href='#m' transform='translate(${x} ${y}) scale(.12) translate(-388 -248)'/>`).join('');
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='108' height='128' viewBox='0 0 108 128'><defs><g id='m'>${mark}</g></defs>${uses}</svg>`;
+    return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+  }
+  function mUpdate() {
+    mRaf = null;
+    const p = heroProgress();
+    const t = clamp(p / 0.7, 0, 1), e = 1 - Math.pow(1 - t, 3);
+    const s0 = Math.max(1, artW * 0.66 / 84);          // one pattern tile starts exactly the size of the EB in the video
+    const s1 = Math.max(1, artW * 0.22 / 84);          // and settles at a size that suits the screen
+    const ps = Math.round((s0 + (s1 - s0) * e) * 1000) / 1000;
+    const mf = Math.round(clamp((p - 0.03) / 0.25, 0, 1) * 100) / 100;
+    const po = Math.round(clamp((p - 0.01) / 0.18, 0, 1) * (1 - 0.6 * e) * 100) / 100;
+    if (ps !== mLast.ps) { stage.style.setProperty('--ps', ps); mLast.ps = ps; }
+    if (mf !== mLast.mf) { stage.style.setProperty('--mf', mf); mLast.mf = mf; }
+    if (po !== mLast.po) { stage.style.setProperty('--po', po); mLast.po = po; }
+  }
+  const mScroll = () => { if (mRaf === null) mRaf = requestAnimationFrame(mUpdate); };
+  const mResize = () => { artW = mArt.offsetWidth; mLast.ps = -1; mScroll(); };
+  function enableMobile() {
+    if (mOn) return; mOn = true;
+    stage.classList.add('m-anim');
+    hero.classList.add('m-scroll');
+    if (!mInit) {
+      mInit = true;
+      mPat.style.backgroundImage = patternTile();
+      mv.poster = 'assets/hero-m-poster.jpg';
+      mv.src = 'assets/hero-intro-m.mp4';
+      const go = mv.play();
+      if (go && go.catch) go.catch(() => {});        // autoplay refused: the poster stays, scrolling still works
+    }
+    addEventListener('scroll', mScroll, { passive: true });
+    addEventListener('resize', mResize);
+    mResize();
+  }
+  function disableMobile() {
+    if (!mOn) return; mOn = false;
+    stage.classList.remove('m-anim');
+    hero.classList.remove('m-scroll');
+    removeEventListener('scroll', mScroll);
+    removeEventListener('resize', mResize);
+    mv.pause();
   }
 
   /* ---------- 3D lettering catches the light as the mouse moves ---------- */
