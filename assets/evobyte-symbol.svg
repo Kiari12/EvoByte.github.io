@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="30 50 716 395" role="img" aria-label="EvoByte">
+  <g fill="#0e3051">
+    <path id="e-bar-1" d="M100 58H298L235 142H38Z"/>
+    <path id="e-bar-2" d="M100 205H298L235 290H38Z"/>
+    <path id="e-bar-3" d="M100 340H298L235 425H38Z"/>
+  </g>
+  <g fill="#e3bd5c">
+    <path id="b-stem" d="M305 160H395L560 438H465Z"/>
+    <path id="b-bowl" d="M440 148L490 58H690L738 150L688 240L738 330L690 425H580L545 330H640L598 240L632 150Z"/>
+  </g>
+</svg>
