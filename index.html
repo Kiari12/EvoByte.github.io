@@ -1101,9 +1101,17 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='108' height='128' viewBox='0 0 108 128'><defs><g id='m'>${mark}</g></defs>${uses}</svg>`;
     return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
   }
-  function mUpdate() {
-    mRaf = null;
-    const p = heroProgress();
+  // The morph eases toward the scroll position instead of jumping to it, so a fast flick or a tap back
+  // to the top still plays the whole reverse: the pattern gathers back into the glowing EB.
+  let mShown = 0, mLastTick = 0;
+  function mUpdate(now) {
+    const target = heroProgress();
+    const dt = Math.min(100, now - (mLastTick || now));
+    mLastTick = now;
+    mShown += (target - mShown) * (1 - Math.pow(1 - 0.085, dt / 16.667));
+    if (Math.abs(target - mShown) < 0.0008) { mShown = target; mRaf = null; mLastTick = 0; }
+    else mRaf = requestAnimationFrame(mUpdate);
+    const p = mShown;
     const t = clamp(p / 0.7, 0, 1), e = 1 - Math.pow(1 - t, 3);
     const s0 = Math.max(1, artW * 0.66 / 84);          // one pattern tile starts exactly the size of the EB in the video
     const s1 = Math.max(1, artW * 0.22 / 84);          // and settles at a size that suits the screen
@@ -1130,6 +1138,7 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     }
     addEventListener('scroll', mScroll, { passive: true });
     addEventListener('resize', mResize);
+    mShown = heroProgress();                              // start where the page already is, no catch-up on load
     mResize();
   }
   function disableMobile() {
@@ -1138,6 +1147,7 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     hero.classList.remove('m-scroll');
     removeEventListener('scroll', mScroll);
     removeEventListener('resize', mResize);
+    if (mRaf !== null) { cancelAnimationFrame(mRaf); mRaf = null; mLastTick = 0; }
     mv.pause();
   }
 
