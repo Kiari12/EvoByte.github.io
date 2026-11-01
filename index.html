@@ -888,7 +888,8 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
 
   let target = 0, shown = 0, rafId = null, lastTick = 0, heroOnScreen = true, loadK = 0, scrubOn = false;
   let seekBusy = false, pendingTime = null;
-  let intro = 'pending', introRaf = null, scrubReady = false, lastLs = -1;
+  let intro = 'pending', introRaf = null, introTimer = null, scrubReady = false, scrubStarted = false, lastLs = -1;
+  let vShown = 0;   // where the scroll video is showing; eases toward the scroll position like the captions do
   const timeFor = p => p * Math.max(0, (video.duration || 0) - 0.02);
   const showingScrub = () => stage.classList.contains('show-scrub');
 
@@ -933,44 +934,72 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
 
   function startIntro() {
     intro = 'playing';
-    introV.playbackRate = 1;
+    introV.playbackRate = heroProgress() > 0.004 ? 4 : 1;
     const p = introV.play();
     if (p && p.catch) p.catch(endIntro);
     const watch = () => {
       if (intro !== 'playing') return;
-      if (heroProgress() > 0.004 && introV.playbackRate < 4) introV.playbackRate = 4;   // visitor is scrolling: finish quickly
+      const scrolled = heroProgress() > 0.004;
+      if (scrolled) {
+        startScrub();                                                   // they want the scroll animation: fetch it now
+        if (introV.playbackRate < 4) introV.playbackRate = 4;          // and finish the build quickly
+        if (scrubReady && introV.readyState < 3) { endIntro(); return; }   // never sit on a stalled frame
+      }
       if (introV.ended || introV.currentTime >= introV.duration - 0.02) { endIntro(); return; }
       introRaf = requestAnimationFrame(watch);
     };
     introRaf = requestAnimationFrame(watch);
+    armIntroTimer();
   }
+  // Hold the finished EB. Seeking to exactly the duration can snap some browsers back to frame one,
+  // so stop just short of it (still the same last frame at 60 fps).
+  function restOnLastFrame() {
+    if (!isFinite(introV.duration)) return;
+    const t = Math.max(0, introV.duration - 0.04);
+    if (introV.ended || introV.currentTime >= t) return;
+    try { introV.currentTime = t; } catch {}
+  }
+  // safety net: whatever happens to playback, the intro hands over in time
+  function armIntroTimer() {
+    clearTimeout(introTimer);
+    const left = Math.max(0, (introV.duration || 3) - introV.currentTime) / (introV.playbackRate || 1);
+    introTimer = setTimeout(() => { if (intro === 'playing') endIntro(); }, (left + 2) * 1000);
+  }
+  introV.addEventListener('ratechange', () => { if (intro === 'playing') armIntroTimer(); });
+  introV.addEventListener('ended', () => endIntro());
   function endIntro() {
     if (intro === 'done') return;
     intro = 'done';
+    clearTimeout(introTimer);
     if (introRaf !== null) { cancelAnimationFrame(introRaf); introRaf = null; }
     introV.pause();
     introV.playbackRate = 1;
-    if (isFinite(introV.duration)) { try { introV.currentTime = introV.duration; } catch {} }
+    restOnLastFrame();
+    startScrub();
     handoff();
   }
   // swap the finished intro for the scroll video, on the same frame
+  // The scroll video starts on the intro's last frame (time 0) and then glides to the scroll position.
   function handoff() {
     if (intro !== 'done' || !scrubReady || showingScrub()) return;
-    shown = target = heroProgress();
-    video.addEventListener('seeked', () => stage.classList.add('show-scrub'), { once: true });
+    vShown = 0;
+    video.addEventListener('seeked', () => { stage.classList.add('show-scrub'); onScroll(); }, { once: true });
     seekBusy = false; pendingTime = null;
-    requestSeek(timeFor(shown));
-    onScroll();
+    requestSeek(0);
   }
 
   function tick(now) {
     const dt = Math.min(100, now - (lastTick || now));
     lastTick = now;
     const k = 0.16;
-    shown += (target - shown) * (1 - Math.pow(1 - k, dt / 16.667));
-    if (Math.abs(target - shown) < 0.0005) { shown = target; rafId = null; lastTick = 0; }
+    const step = 1 - Math.pow(1 - k, dt / 16.667);
+    shown += (target - shown) * step;
+    const scrubbing = showingScrub();
+    if (scrubbing) vShown += (target - vShown) * step * 0.6;            // a touch slower, so a catch-up reads as motion
+    const done = Math.abs(target - shown) < 0.0005 && (!scrubbing || Math.abs(target - vShown) < 0.0005);
+    if (done) { shown = target; if (scrubbing) vShown = target; rafId = null; lastTick = 0; }
     else rafId = requestAnimationFrame(tick);
-    if (showingScrub()) requestSeek(timeFor(shown));
+    if (scrubbing) requestSeek(timeFor(vShown));
     updateCaptions(shown);
   }
   function onScroll() {
@@ -996,51 +1025,72 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     if (heroInit) return; heroInit = true;
     posterLayer.style.backgroundImage = "url('assets/hero-poster.jpg')";
     let started = false;
-    const startBlobFetch = () => { if (started) return; started = true; loadHero().catch(failVideo); };
+    const go = () => { if (started) return; started = true; loadHero().catch(failVideo); };
     const img = new Image();
-    img.onload = startBlobFetch; img.onerror = startBlobFetch;
+    img.onload = go; img.onerror = go;
     img.src = 'assets/hero-poster.jpg';
-    setTimeout(startBlobFetch, 4000);
+    setTimeout(go, 4000);
   }
-  // stream one file into a Blob URL; the ring fills across both files
-  async function fetchBlob(url, bytesHint, base, total) {
-    const ring = $('.ring');
+  // the ring shows how much of both videos has arrived
+  let lastRingAt = 0;
+  function updateRing() {
+    const ring = $('.ring'); if (!ring) return;
+    const got = v => (v.duration && v.buffered.length) ? Math.min(1, v.buffered.end(v.buffered.length - 1) / v.duration) : 0;
+    const frac = (got(introV) * INTRO_BYTES + got(video) * SCRUB_BYTES) / (INTRO_BYTES + SCRUB_BYTES);
+    const now = performance.now();
+    if (now - lastRingAt > 100 || frac >= 0.999) { lastRingAt = now; ring.style.setProperty('--ld', Math.round(126 * (1 - frac))); }
+  }
+  introV.addEventListener('progress', updateRing);
+  video.addEventListener('progress', updateRing);
+  // Fallback for hosts without partial downloads (HTTP Range): a streamed file cannot be seeked there,
+  // so the scroll video is fetched whole into a Blob instead.
+  async function fetchBlob(url) {
     const ctrl = new AbortController();
     let watchdog = setTimeout(() => ctrl.abort(), 20000);
-    const res = await fetch(url, { priority: 'low', signal: ctrl.signal });
+    const res = await fetch(url, { signal: ctrl.signal });
     if (!res.ok || !res.body) throw new Error(url + ' ' + res.status);
-    const size = Number(res.headers.get('Content-Length')) || bytesHint;
     const reader = res.body.getReader();
-    const chunks = []; let got = 0, lastRing = 0;
+    const chunks = [];
     for (;;) {
       const { done, value } = await reader.read();
       if (done) break;
       clearTimeout(watchdog);
       watchdog = setTimeout(() => ctrl.abort(), 20000);
-      chunks.push(value); got += value.length;
-      const frac = Math.min(1, (base + got * bytesHint / size) / total), now = performance.now();
-      if (ring && (now - lastRing > 100 || frac === 1)) { lastRing = now; ring.style.setProperty('--ld', Math.round(126 * (1 - frac))); }
+      chunks.push(value);
     }
     clearTimeout(watchdog);
     return URL.createObjectURL(new Blob(chunks, { type: 'video/mp4' }));
   }
-  const whenPlayable = v => new Promise(r => { if (v.readyState >= 3) r(); else v.addEventListener('canplay', r, { once: true }); });
-  async function loadHero() {
-    const total = INTRO_BYTES + SCRUB_BYTES;
-    introV.src = await fetchBlob(INTRO_URL, INTRO_BYTES, 0, total);
-    introV.load();
-    await whenPlayable(introV);
-    stage.classList.add('video-ready');
-    if (scrubOn && heroProgress() < 0.01) startIntro();
-    else { intro = 'done'; try { introV.currentTime = introV.duration; } catch {} }
+  const when = (v, ev, test) => new Promise(r => { if (test()) r(); else v.addEventListener(ev, r, { once: true }); });
+  const fullyBuffered = v => v.duration && v.buffered.length && v.buffered.end(v.buffered.length - 1) >= v.duration - 0.05;
+  const seekableAll = v => v.seekable.length && v.seekable.end(v.seekable.length - 1) >= v.duration - 0.1;
+  // The scroll video waits until the intro has fully arrived, so the two never fight for bandwidth,
+  // unless the visitor scrolls first, in which case it starts straight away.
+  async function startScrub() {
+    if (scrubStarted) return; scrubStarted = true;
     try {
-      video.src = await fetchBlob(SCRUB_URL, SCRUB_BYTES, INTRO_BYTES, total);
+      video.src = SCRUB_URL;
       video.load();
-      await whenPlayable(video);
+      await when(video, 'canplay', () => video.readyState >= 3);
+      if (!seekableAll(video)) { video.src = await fetchBlob(SCRUB_URL); video.load(); await when(video, 'canplay', () => video.readyState >= 3); }
       scrubReady = true;
+      updateRing();
       handoff();
     } catch { /* scroll video missing: the EB from the intro stays, captions still run */ }
-    const ring = $('.ring'); if (ring) ring.style.setProperty('--ld', 0);
+  }
+  async function loadHero() {
+    // stream the intro so it can start before the whole file has arrived
+    introV.src = INTRO_URL;
+    introV.load();
+    // play once enough has arrived to run without pausing; never wait more than 3 s for that
+    await Promise.race([when(introV, 'canplaythrough', () => introV.readyState >= 4), new Promise(r => setTimeout(r, 3000))]);
+    await when(introV, 'canplay', () => introV.readyState >= 3);
+    stage.classList.add('video-ready');
+    if (scrubOn) startIntro();
+    else { intro = 'done'; restOnLastFrame(); }
+    const kick = () => { if (fullyBuffered(introV)) startScrub(); };
+    introV.addEventListener('progress', kick); kick();
+    if (heroProgress() > 0.004) startScrub();
   }
   function failVideo() {
     if (stage.classList.contains('video-failed')) return;
