@@ -140,6 +140,9 @@ body.menu-open .menu-btn span:nth-child(3){transform:translateY(-7px) rotate(-45
 /* same frame on both sides of the swap, so it is instant */
 .stage.show-scrub #hero{opacity:1;transition:none}
 .stage.show-scrub #intro{opacity:0;transition:none}
+/* scrolled before the build could play: hold a still of the finished EB until the scroll video takes over */
+.stage.skip-intro #intro{opacity:0;transition:none}
+.stage.skip-intro .poster{background-image:url(assets/hero-eb.jpg)!important}
 /* boxier screens would crop the full wordmark off the sides: show the whole frame instead; its dark edges melt into the night canvas */
 @media (max-aspect-ratio: 3/2){
   .stage{background:linear-gradient(180deg,#0d1c2d 0%,#07131f 50%,#040e18 100%)}
@@ -909,7 +912,7 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     if (pendingTime !== null) { const t = pendingTime; pendingTime = null; requestSeek(t); }
   });
   video.addEventListener('error', () => { seekBusy = false; pendingTime = null; });   // the intro's last frame stays up
-  introV.addEventListener('error', () => failVideo());
+  introV.addEventListener('error', () => { if (!stage.classList.contains('skip-intro')) failVideo(); });
 
   function updateCaptions(p) {
     for (const band of bands) {
@@ -941,6 +944,7 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
       if (intro !== 'playing') return;
       const scrolled = heroProgress() > 0.004;
       if (scrolled) {
+        if (!fullyBuffered(introV)) { skipIntro(); return; }           // still downloading: don't make them wait for it
         startScrub();                                                   // they want the scroll animation: fetch it now
         if (introV.playbackRate < 4) introV.playbackRate = 4;          // and finish the build quickly
         if (scrubReady && introV.readyState < 3) { endIntro(); return; }   // never sit on a stalled frame
@@ -950,6 +954,20 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     };
     introRaf = requestAnimationFrame(watch);
     armIntroTimer();
+  }
+  // Scrolled before the build had downloaded: drop it, show the finished EB as a still,
+  // and give all the bandwidth to the scroll video, which carries on from that same EB.
+  function skipIntro() {
+    if (intro === 'done') return;
+    intro = 'done';
+    clearTimeout(introTimer);
+    if (introRaf !== null) { cancelAnimationFrame(introRaf); introRaf = null; }
+    stage.classList.add('skip-intro');
+    introV.pause();
+    introV.removeAttribute('src');
+    introV.load();                                                      // stops the download
+    startScrub();
+    handoff();
   }
   // Hold the finished EB. Seeking to exactly the duration can snap some browsers back to frame one,
   // so stop just short of it (still the same last frame at 60 fps).
@@ -1004,6 +1022,7 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
   }
   function onScroll() {
     target = heroProgress();
+    if (intro === 'pending' && target > 0.004 && heroInit) skipIntro();
     if (rafId === null && heroOnScreen && scrubOn) rafId = requestAnimationFrame(tick);
   }
   new IntersectionObserver(en => { heroOnScreen = en[0].isIntersecting; if (heroOnScreen) onScroll(); }).observe(hero);
@@ -1085,6 +1104,7 @@ body.paused *,body.paused *::before,body.paused *::after{animation-play-state:pa
     // play once enough has arrived to run without pausing; never wait more than 3 s for that
     await Promise.race([when(introV, 'canplaythrough', () => introV.readyState >= 4), new Promise(r => setTimeout(r, 3000))]);
     await when(introV, 'canplay', () => introV.readyState >= 3);
+    if (intro !== 'pending') return;                                    // skipped while it loaded
     stage.classList.add('video-ready');
     if (scrubOn) startIntro();
     else { intro = 'done'; restOnLastFrame(); }
